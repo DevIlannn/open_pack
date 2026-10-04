@@ -1,6 +1,6 @@
 {
   "name": "@ilanalimanjs/open_pack",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Open Pack CLI: create a new project from the Open Pack source template",
   "type": "module",
   "bin": {

@@ -26,7 +26,7 @@ async function main() {
   await downloadTemplate(TEMPLATE_SOURCE, { dir: targetDirectory });
 
   console.log(
-    `\nDone. Next steps:\n\n  cd ${projectName}\n  npm install\n  cp .env.examples .env\n  node --env-file=.env core/index.js\n`
+    `\nDone. Next steps:\n\n  cd ${projectName}\n  npm install\n  cp .env.examples .env\n  npm run start\n`
   );
 }
 

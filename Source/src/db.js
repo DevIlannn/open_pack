@@ -28,4 +28,16 @@ export const sessionStore = new PgStore({
   createTableIfMissing: true
 });
 
+try {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL
+    )
+  `);
+} catch (error) {
+  console.error('Database schema setup failed:', error.message);
+}
+
 export default pool;
