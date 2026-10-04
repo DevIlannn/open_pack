@@ -43,9 +43,8 @@ Source/
 
 ## Source code - Fast Starter pack
 A super simple version of the server for when you want a running backend in minutes. The whole backend lives in just two files inside `src/`: `server.js` sets up Express with CORS, cookie-based sessions, static file serving, a health check route, and a database check on startup, while `db.js` provides the PostgreSQL connection. The `public/` folder holds a single `index.html` entry page and an `assets/` folder for images, styles, and scripts, all served directly by the server. It listens on a port during local development and exports the app for serverless platforms in production, so the included `vercel.json` is enough to deploy it. Use it for quick prototypes and experiments, then move to the full `core/` and `src/` structure above when the project needs a session store, security middleware, structured routing, and error pages.
-
 ```
-Fast_source_code/
+Source_code/
 ├── src/
 │   ├── server.js
 │   └── db.js
@@ -56,6 +55,27 @@ Fast_source_code/
 ├── .gitignore
 ├── package.json
 └── vercel.json
+```
+**Create the Folder Structure**
+```bat
+REM Windows version
+
+mkdir Source_code\src
+mkdir Source_code\public\assets
+cd Source_code
+type nul > src\server.js
+type nul > src\db.js
+type nul > public\index.html
+type nul > .env
+type nul > .gitignore
+type nul > package.json
+type nul > vercel.json
+```
+```bash
+# Termux or Linux version
+
+mkdir -p Source_code/{src,public/assets} && cd Source_code
+touch src/server.js src/db.js public/index.html .env .gitignore package.json vercel.json
 ```
 
 ### SOURCE CODE :
