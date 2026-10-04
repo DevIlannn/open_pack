@@ -4,7 +4,7 @@
 ## How to use
 ```bash
 ## 1. Create a project
-npx open_pack@latest my-project
+npx @ilanalimanjs/open_pack@latest my-project
 cd my-project
 npm install
 
@@ -80,7 +80,7 @@ touch src/server.js src/db.js public/index.html .env .gitignore package.json ver
 
 ### SOURCE CODE :
 It sets up CORS, sessions, and static file serving from `public/`, defines the `/app` page route and `/health` check, and starts listening locally or exports the app for Vercel in production.
-```js
+```server.js
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';

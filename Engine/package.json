@@ -1,10 +1,13 @@
 {
-  "name": "open_pack",
+  "name": "@ilanalimanjs/open_pack",
   "version": "1.0.0",
   "description": "Open Pack CLI: create a new project from the Open Pack source template",
   "type": "module",
   "bin": {
-    "open_pack": "./bin/index.js"
+    "open_pack": "bin/index.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "bin"
