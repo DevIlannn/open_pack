@@ -1,7 +1,7 @@
-### Open Pack - Raw source code template
+## Open Pack - Raw source code template
 **Open Pack** is a raw source code template for starting web and backend projects fast, built for developers who want to start working right away without deleting examples, dummy data, or unnecessary scaffolding. Built on `Node.js` with `PostgreSQL` as the main data engine, it provides the foundation almost every project needs: a ready-to-run server, a secure database connection, user session management, static page and file serving, clean error handling, and basic security. Everything is kept thin and flexible, not tied to any single type of application, so it works as a starting point for any product, from web apps and dashboards to API services. Open Pack runs locally and deploys to serverless platforms such as `Vercel`, while table schemas, routes, and business logic are fully defined by the developer, not by the template.
 
-### How to use
+## How to use
 ```bash
 ## 1. Create a project
 npx open_pack@latest my-project
@@ -15,7 +15,7 @@ cp .env.examples .env
 npm run dev
 ```
 
-### Workspace Structure Project
+## Workspace Structure Project
 The core folder holds the application's infrastructure. `core/index.js` is the entry point: it assembles the Express app with middleware, sessions, static assets, routers, and error handlers, then exports it as the serverless handler for Vercel, with setup only and no business logic. `core/utils.js` supports it with shared tooling: a colored logger and timer, basic security headers and rate limiting, CORS and session configuration, inline error pages, error helpers, a database listener, and the local server starter.
 
 The `src` folder is the application layer, owned entirely by the developer. It contains the PostgreSQL connection pool and session store, the JSON API router mounted at `/api`, the authentication router and helpers (password hashing, session handling, route guard) mounted at `/auth`, and the page router mounted at `/app` that serves HTML files. Changes inside src do not affect core as long as the exports stay the same.
@@ -41,7 +41,7 @@ Source/
 └── vercel.json
 ```
 
-### Source code - Fast Starter pack
+## Source code - Fast Starter pack
 A super simple version of the server for when you want a running backend in minutes. The whole backend lives in just two files inside `src/`: `server.js` sets up Express with CORS, cookie-based sessions, static file serving, a health check route, and a database check on startup, while `db.js` provides the PostgreSQL connection. The `public/` folder holds a single `index.html` entry page and an `assets/` folder for images, styles, and scripts, all served directly by the server. It listens on a port during local development and exports the app for serverless platforms in production, so the included `vercel.json` is enough to deploy it. Use it for quick prototypes and experiments, then move to the full `core/` and `src/` structure above when the project needs a session store, security middleware, structured routing, and error pages.
 
 ```
@@ -58,9 +58,8 @@ Fast_source_code/
 └── vercel.json
 ```
 
-***SOURCE CODE :***
-_server.js_
-The Express server. It sets up CORS, sessions, and static file serving from `public/`, defines the `/app` page route and `/health` check, and starts listening locally or exports the app for Vercel in production.
+### SOURCE CODE :
+It sets up CORS, sessions, and static file serving from `public/`, defines the `/app` page route and `/health` check, and starts listening locally or exports the app for Vercel in production.
 ```js
 import express from 'express';
 import cors from 'cors';
@@ -104,9 +103,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 export default app;
 ```
-
-_db.js_
-The PostgreSQL connection. It creates the connection pool from `DATABASE_URL` and provides `checkDatabase()` to verify the connection on startup.
+It creates the connection pool from `DATABASE_URL` and provides `checkDatabase()` to verify the connection on startup.
 ```db.js
 import pg from 'pg';
 import dotenv from 'dotenv';
@@ -127,7 +124,7 @@ export async function checkDatabase() {
 export default pool;
 ```
 
-***CONFIGURATION FILES***
+### CONFIGURATION FILES
 ```env 
 PORT=3000
 CORS_ORIGIN=true

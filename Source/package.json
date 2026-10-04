@@ -12,8 +12,6 @@
     "api",
     "serverless"
   ],
-  "private": true,
-  "license": "UNLICENSED",
   "type": "module",
   "main": "core/index.js",
   "scripts": {
