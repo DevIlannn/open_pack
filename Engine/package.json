@@ -1,0 +1,22 @@
+{
+  "name": "open_pack",
+  "version": "1.0.0",
+  "description": "Open Pack CLI: create a new project from the Open Pack source template",
+  "type": "module",
+  "bin": {
+    "open_pack": "./bin/index.js"
+  },
+  "files": [
+    "bin"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DevIlannn/open_pack.git"
+  },
+  "dependencies": {
+    "giget": "^2.0.0"
+  }
+}
