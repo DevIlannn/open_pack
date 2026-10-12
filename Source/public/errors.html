@@ -2,38 +2,153 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Error</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Something went wrong</title>
+  <meta name="description" content="The page you are looking for is not available. Get back home by clicking the Go Home button.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="">
+  <meta name="format-detection" content="telephone=no">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Something went wrong">
+  <meta property="og:description" content="The page you are looking for is not available. Get back home by clicking the Go Home button.">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Something went wrong">
+  <meta name="twitter:description" content="The page you are looking for is not available. Get back home by clicking the Go Home button.">
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --color-background: #282828;
+      --color-text-primary: #ffffff;
+      --color-text-muted: #b8b8b8;
+      --font-family-base: Georgia, 'Times New Roman', serif;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      height: 100%;
+      background: var(--color-background);
+    }
+
+    body {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: var(--color-background);
+      color: var(--color-text-primary);
+      font-family: var(--font-family-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      width: 100%;
+      padding: 0 clamp(1.5rem, 11vw, 6rem) 6vh;
+    }
+
+    #code {
+      font-size: clamp(4.5rem, 15vw, 7.5rem);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    #title {
+      margin-top: 0.75rem;
+      font-size: clamp(1.5rem, 4.5vw, 2rem);
+      font-weight: 700;
+      line-height: 1.1;
+      text-transform: lowercase;
+    }
+
+    #description {
+      max-width: 22rem;
+      margin-top: 0.25rem;
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+      line-height: 1.35;
+    }
+
+    .home-link {
+      display: inline-block;
+      margin-top: 1.5rem;
+      color: var(--color-text-primary);
+      font-size: 0.875rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .home-link:hover,
+    .home-link:focus-visible {
+      opacity: 0.7;
+    }
+
+    .home-link:focus-visible {
+      outline: 2px solid var(--color-text-primary);
+      outline-offset: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-link {
+        transition: none;
+      }
+    }
+  </style>
 </head>
 <body>
   <main>
-    <h1 id="code"></h1>
-    <p id="side"></p>
-    <h2 id="title"></h2>
-    <p id="message"></p>
-    <a href="/">Back to home</a>
+    <h1 id="code">404</h1>
+    <h2 id="title">Something went wrong</h2>
+    <p id="description">The page you are looking for is not available. Get back home by clicking the Go Home button.</p>
+    <a class="home-link" href="/">&lt; Go Home</a>
   </main>
 
   <script>
-    const code = location.pathname.split('/').filter(Boolean).pop();
-    const sideLabels = {
-      client: 'Client-side error',
-      server: 'Server-side error'
+    const segment = location.pathname.split('/').filter(Boolean).pop();
+    const code = /^[45]\d{2}$/.test(segment) ? segment : '404';
+
+    const setMeta = (selector, value) => {
+      const element = document.querySelector(selector);
+      if (element) element.setAttribute('content', value);
     };
 
+    const render = (title, description, heading) => {
+      document.title = heading;
+      document.getElementById('title').textContent = title;
+      document.getElementById('description').textContent = description;
+      setMeta('meta[name="description"]', description);
+      setMeta('meta[property="og:title"]', heading);
+      setMeta('meta[property="og:description"]', description);
+      setMeta('meta[name="twitter:title"]', heading);
+      setMeta('meta[name="twitter:description"]', description);
+    };
+
+    const themeColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-background')
+      .trim();
+
+    setMeta('meta[name="theme-color"]', themeColor);
     document.getElementById('code').textContent = code;
 
     fetch(`/errors/${code}/info`)
       .then((response) => response.json())
-      .then((error) => {
-        document.title = `${error.code} ${error.title}`;
-        document.getElementById('side').textContent = sideLabels[error.side];
-        document.getElementById('title').textContent = error.title;
-        document.getElementById('message').textContent = error.message;
-      })
-      .catch(() => {
-        document.getElementById('title').textContent = 'Error';
-      });
+      .then((error) => render(error.title, error.message, `${error.code} ${error.title}`))
+      .catch(() => render(
+        'Something went wrong',
+        'The page you are looking for is not available. Get back home by clicking the Go Home button.',
+        `${code} Something went wrong`
+      ));
   </script>
 </body>
 </html>
