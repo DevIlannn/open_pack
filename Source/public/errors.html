@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Error</title>
+</head>
+<body>
+  <main>
+    <h1 id="code"></h1>
+    <p id="side"></p>
+    <h2 id="title"></h2>
+    <p id="message"></p>
+    <a href="/">Back to home</a>
+  </main>
+
+  <script>
+    const code = location.pathname.split('/').filter(Boolean).pop();
+    const sideLabels = {
+      client: 'Client-side error',
+      server: 'Server-side error'
+    };
+
+    document.getElementById('code').textContent = code;
+
+    fetch(`/errors/${code}/info`)
+      .then((response) => response.json())
+      .then((error) => {
+        document.title = `${error.code} ${error.title}`;
+        document.getElementById('side').textContent = sideLabels[error.side];
+        document.getElementById('title').textContent = error.title;
+        document.getElementById('message').textContent = error.message;
+      })
+      .catch(() => {
+        document.getElementById('title').textContent = 'Error';
+      });
+  </script>
+</body>
+</html>

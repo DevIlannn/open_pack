@@ -1,18 +1,14 @@
 import { Router } from 'express';
-import pool from './db.js';
+import { pool } from './db.js';
 
-const router = Router();
+export const apiPrefix = '/api';
+export const apiRouter = Router();
 
-router.get('/status', async (request, response, next) => {
+apiRouter.get('/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
-    response.json({
-      success: true,
-      message: 'Backend server is running and ready to handle API requests'
-    });
-  } catch (error) {
-    next(error);
+    res.json({ status: 'ok', database: 'connected' });
+  } catch {
+    res.status(503).json({ status: 'error', database: 'disconnected' });
   }
 });
-
-export default router;

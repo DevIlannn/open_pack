@@ -1,54 +1,50 @@
 {
-  "name": "application",
+  "name": "open-pack",
   "version": "1.0.0",
-  "description": "A web application with a Node.js backend and PostgreSQL database, providing user authentication, session management, a JSON API, and browser-based pages.",
+  "description": "Open Pack is a raw source code template for starting web and backend projects fast, built on Node.js, Express, and PostgreSQL. It ships only what every project needs: a ready-to-run server, a secure database connection, session management, static page serving, and clean error handling, with no dummy data or sample code to delete. Runs locally and deploys to Vercel.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon --watch src --exec \"node --env-file=.env\" src/server.js",
+    "start": "node src/server.js"
+  },
   "keywords": [
-    "application",
+    "open-pack",
+    "starter",
+    "template",
+    "boilerplate",
     "nodejs",
     "express",
     "postgresql",
     "session",
-    "authentication",
-    "api",
-    "serverless"
+    "vercel",
+    "backend",
+    "fullstack",
+    "esm"
   ],
-  "type": "module",
-  "main": "core/index.js",
-  "scripts": {
-    "start": "node core/index.js",
-    "dev": "nodemon core/index.js"
-  },
-  "nodemonConfig": {
-    "watch": [
-      "core",
-      "src"
-    ],
-    "ext": "js,json",
-    "ignore": [
-      "public/**",
-      "node_modules/**"
-    ],
-    "delay": 500
-  },
   "engines": {
-    "node": ">=20.11",
-    "npm": ">=10"
+    "node": ">=20.6.0"
   },
   "dependencies": {
+    "axios": "^1.8.4",
     "bcryptjs": "^3.0.2",
     "chalk": "^5.4.1",
-    "compression": "^1.8.0",
     "connect-pg-simple": "^10.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
     "express-session": "^1.18.1",
+    "express-slow-down": "^2.0.3",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "log-symbols": "^7.0.0",
     "morgan": "^1.10.0",
-    "nanoid": "^5.0.9",
-    "pg": "^8.13.0",
-    "sanitize-html": "^2.13.1",
-    "zod": "^3.24.1"
+    "nodemailer": "^6.10.0",
+    "ora": "^8.1.1",
+    "pg": "^8.13.1",
+    "response-time": "^2.3.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

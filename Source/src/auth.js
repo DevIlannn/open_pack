@@ -1,40 +1,34 @@
-import express from 'express';
-import bcrypt from 'bcryptjs';
-import pool from './db.js';
+import express, { Router } from 'express';
+import session from 'express-session';
+import rateLimit from 'express-rate-limit';
+import { sessionStore } from './db.js';
 
-const router = express.Router();
+export const authPrefix = '/auth';
+export const authRouter = Router();
 
-export function hashPassword(password) {
-  return bcrypt.hash(password, 12);
-}
+const authLimiter = rateLimit({
+  windowMs: 1000 * 60 * 15,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests' },
+});
 
-export function verifyPassword(password, hash) {
-  return bcrypt.compare(password, hash);
-}
+authRouter.use(authLimiter);
 
-export function startSession(request, userId) {
-  return new Promise((resolve, reject) => {
-    request.session.regenerate((regenerateError) => {
-      if (regenerateError) {
-        return reject(regenerateError);
-      }
-      request.session.userId = userId;
-      request.session.save((saveError) => (saveError ? reject(saveError) : resolve()));
-    });
-  });
-}
-
-export function endSession(request) {
-  return new Promise((resolve, reject) => {
-    request.session.destroy((error) => (error ? reject(error) : resolve()));
-  });
-}
-
-export function requireAuth(request, response, next) {
-  if (!request.session.userId) {
-    return response.status(401).json({ success: false, message: 'Authentication required' });
-  }
-  next();
-}
-
-export default router;
+export const authMiddleware = [
+  express.json(),
+  express.urlencoded({ extended: true }),
+  session({
+    store: sessionStore,
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    },
+  }),
+];

@@ -1,43 +1,60 @@
-import dotenv from 'dotenv';
 import pg from 'pg';
+import dotenv from 'dotenv';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
+import chalk from 'chalk';
+import logSymbols from 'log-symbols';
+import ora from 'ora';
 
 dotenv.config();
 
 const { Pool } = pg;
+const PgSessionStore = connectPgSimple(session);
 
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: true },
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-  statement_timeout: 15000
 });
 
-pool.on('error', (error) => {
-  console.error('Database pool error:', error.message);
-});
-
-const PgStore = connectPgSimple(session);
-
-export const sessionStore = new PgStore({
+export const sessionStore = new PgSessionStore({
   pool,
-  tableName: 'sessions',
-  createTableIfMissing: true
+  createTableIfMissing: true,
 });
 
-try {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
-    )
-  `);
-} catch (error) {
-  console.error('Database schema setup failed:', error.message);
+export async function checkConnection() {
+  const spinner = ora('Connecting to database').start();
+
+  try {
+    await pool.query('SELECT 1');
+    spinner.succeed(chalk.green('Database connected'));
+    return true;
+  } catch (error) {
+    spinner.fail(`${chalk.red('Database connection failed')} ${chalk.gray(error.message)}`);
+    return false;
+  }
 }
 
-export default pool;
+export async function useMigration(statements = []) {
+  if (statements.length === 0) {
+    console.log(logSymbols.info, chalk.gray('No schema found, migration skipped'));
+    return false;
+  }
+
+  const spinner = ora('Running migration').start();
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+    for (const statement of statements) {
+      await client.query(statement);
+    }
+    await client.query('COMMIT');
+    spinner.succeed(chalk.green('Migration completed'));
+    return true;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    spinner.fail(`${chalk.red('Migration failed')} ${chalk.gray(error.message)}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
