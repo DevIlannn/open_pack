@@ -36,6 +36,7 @@ Source/
 │   └── server.js
 ├── public/
 │   ├── assets/
+│   └── errors.html
 │   └── index.html
 ├── .env.examples
 ├── .gitignore
@@ -44,20 +45,26 @@ Source/
 ```
 
 ## What’s Inside
+
 ### 1. Instant page routes, no code needed
-Add an HTML file to `public/pages/` and it is instantly available in the browser at `/app/` followed by the file name. No route to register, no server code to touch.
+
+Add an HTML file to `public/` and it is instantly available in the browser at `/app/` followed by the file name. No route to register, no server code to touch.
+
 ```
-public/pages/dashboard.html   ->  /app/dashboard
-public/pages/profile.html     ->  /app/profile
-public/pages/auth.html        ->  /app/auth
+public/dashboard.html   ->  /app/dashboard
+public/profile.html     ->  /app/profile
+public/auth.html        ->  /app/auth
 ```
-To try it, create `public/pages/hello.html`, run the project, and open `/app/hello`. If the file does not exist, visitors are sent to a clean 404 page automatically. Keep your styles, scripts, and images in `public/assets/` and link them with absolute paths such as `/assets/css/style.css`.
+
+To try it, create `public/hello.html`, run the project, and open `/app/hello`. Opening `/app` on its own redirects to `/`. If the file does not exist, visitors are sent to a clean 404 page automatically. Files in `public/` are also served as static files, so `public/hello.html` can be opened directly at `/hello.html`. Keep your styles, scripts, and images in `public/assets/` and link them with absolute paths such as `/assets/css/style.css`.
 
 ### 2. Browser client and server side handling
+
 Every error is handled by one page, `public/errors.html`, working together with `server.js`. When a request fails, the server checks whether it came from a browser or an API client. Browsers are redirected to the error page, while API clients keep receiving plain JSON, so fetch calls never break. The `/errors/:code` route accepts any code from 400 to 599 and serves the page with that real HTTP status.
 
 **Server side** (`src/server.js`)
 The server owns the error catalog and classifies each code: 4xx is a client-side error, 5xx is a server-side error. Codes missing from the catalog fall back to a generic title and message, so no visitor ever sees a blank page.
+
 ```js
 const wantsPage = (req) => req.headers.accept?.includes('text/html');
 
@@ -101,6 +108,7 @@ app.use((error, req, res, next) => {
 
 **Client side** (`public/errors.html`)
 The page reads the code from the address, fetches its details from the server, and fills in the side, title, and message.
+
 ```js
 const code = location.pathname.split('/').filter(Boolean).pop();
 

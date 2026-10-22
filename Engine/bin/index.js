@@ -108,19 +108,10 @@ const isWindows = process.platform === 'win32';
 const isTTY = Boolean(process.stdout.isTTY && process.stdin.isTTY);
 const SHELL_TOOLS = new Set(Object.keys(PACKAGE_MANAGERS));
 
-const STATE_ICONS = {
-  done: chalk.green('●'),
-  warning: chalk.yellow('●'),
-  failed: chalk.red('●'),
-  pending: muted('○')
-};
-
-const STATUS_VALUES = {
-  done: (result) => muted(`${(result.duration / 1000).toFixed(1)}s`),
-  warning: (result) => chalk.yellow(`${(result.duration / 1000).toFixed(1)}s`),
-  failed: () => chalk.red('failed'),
-  pending: () => muted('pending')
-};
+const BAR = muted('│');
+const END = muted('└');
+const SPINNER = { interval: 80, frames: ['◒', '◐', '◓', '◑'] };
+const activity = { spinner: null };
 
 class UsageError extends Error {}
 
@@ -294,6 +285,13 @@ const detectIpAddress = () => {
   return entry?.address ?? null;
 };
 
+const formatSystem = () => {
+  const release = os.release().split('-')[0];
+  const arch = os.arch();
+  if (isAndroid()) return `Android (kernel ${release}, ${arch})`;
+  return `${PLATFORM_LABELS[process.platform] ?? process.platform} ${release} (${arch})`;
+};
+
 const detectEnvironment = async ({ port, checkUpdate }) => {
   const managerNames = Object.keys(PACKAGE_MANAGERS);
   const [gitVersion, portFree, latestVersion, device, ...managerVersions] = await Promise.all([
@@ -308,7 +306,7 @@ const detectEnvironment = async ({ port, checkUpdate }) => {
   );
 
   return {
-    system: `${PLATFORM_LABELS[process.platform] ?? process.platform} ${os.release()} (${os.arch()})`,
+    system: formatSystem(),
     device,
     ipAddress: detectIpAddress(),
     node: process.versions.node,
@@ -346,15 +344,6 @@ const printEnvironmentCard = (environment) => {
   ];
   console.log(renderCard('Environment', rows));
   console.log();
-};
-
-const printStatusCard = (results) => {
-  const rows = results.map((result) => ({
-    label: `${STATE_ICONS[result.state]} ${result.label}`,
-    value: STATUS_VALUES[result.state](result)
-  }));
-  console.log();
-  console.log(renderCard('Build status', rows));
 };
 
 const printBanner = async () => {
@@ -534,7 +523,6 @@ const resolveDefaultOptions = async (cli, environment) => {
 const buildSteps = ({ name, packageManager, mode, port }) => {
   const targetDirectory = path.resolve(process.cwd(), name);
   const manager = PACKAGE_MANAGERS[packageManager];
-  const customPort = port !== DEFAULT_PORT;
   const steps = [
     {
       active: 'Fetching template',
@@ -545,28 +533,20 @@ const buildSteps = ({ name, packageManager, mode, port }) => {
       }
     },
     {
-      active: 'Preparing environment',
-      done: `${ENV_FILE} is ready`,
+      active: 'Configuring environment',
+      done: 'Environment configured',
       task: async () => {
         const source = path.join(targetDirectory, ENV_EXAMPLE_FILE);
         if (!(await fse.pathExists(source))) throw new Error(`${ENV_EXAMPLE_FILE} not found in the template`);
-        await fse.copy(source, path.join(targetDirectory, ENV_FILE));
+        const withSecret = setEnvValue(
+          await fse.readFile(source, 'utf8'),
+          'SESSION_SECRET',
+          randomBytes(32).toString('hex')
+        );
+        const content = port === DEFAULT_PORT ? withSecret : setEnvValue(withSecret, 'PORT', String(port));
+        await fse.writeFile(path.join(targetDirectory, ENV_FILE), content);
+        process.chdir(targetDirectory);
       }
-    },
-    {
-      active: 'Injecting template configuration',
-      done: customPort ? 'SESSION_SECRET and PORT injected' : 'SESSION_SECRET injected',
-      task: async () => {
-        const envPath = path.join(targetDirectory, ENV_FILE);
-        const current = await fse.readFile(envPath, 'utf8');
-        const withSecret = setEnvValue(current, 'SESSION_SECRET', randomBytes(32).toString('hex'));
-        await fse.writeFile(envPath, customPort ? setEnvValue(withSecret, 'PORT', String(port)) : withSecret);
-      }
-    },
-    {
-      active: 'Entering project directory',
-      done: `Entered ${name}`,
-      task: async () => process.chdir(targetDirectory)
     }
   ];
 
@@ -579,35 +559,25 @@ const buildSteps = ({ name, packageManager, mode, port }) => {
     });
   }
 
-  if (mode === MODES.run) {
-    steps.push({
-      active: 'Starting template',
-      done: 'Template ready to run',
-      task: async () => undefined
-    });
-  }
-
   return { steps, targetDirectory, manager };
 };
 
-const runSteps = async (steps, results) => {
-  const total = steps.length;
-  for (const [index, step] of steps.entries()) {
-    const prefix = muted(`[${index + 1}/${total}]`);
-    const spinner = ora({ text: `${prefix} ${step.active}`, indent: 2, spinner: 'dots12', color: 'cyan' }).start();
+const runSteps = async (steps) => {
+  for (const step of steps) {
+    console.log(BAR);
+    const spinner = ora({ text: ` ${step.active}`, spinner: SPINNER, color: 'magenta' }).start();
+    activity.spinner = spinner;
     const startedAt = Date.now();
     try {
-      const outcome = (await step.task()) ?? {};
+      await step.task();
       const remaining = (step.minDuration ?? STEP_MIN_DURATION_MS) - (Date.now() - startedAt);
       if (remaining > 0) await pause(remaining);
-      const state = outcome.state ?? 'done';
-      const label = outcome.label ?? step.done;
-      results[index] = { label, state, duration: Date.now() - startedAt };
-      spinner.stopAndPersist({ symbol: STATE_ICONS[state], text: `${prefix} ${label}` });
+      spinner.stopAndPersist({ symbol: chalk.green('◇'), text: ` ${step.done}` });
     } catch (error) {
-      results[index] = { label: step.active, state: 'failed', duration: Date.now() - startedAt };
-      spinner.stopAndPersist({ symbol: STATE_ICONS.failed, text: `${prefix} ${step.active} ${chalk.red('failed')}` });
+      spinner.stopAndPersist({ symbol: chalk.red('■'), text: ` ${step.active} ${chalk.red('failed')}` });
       throw error;
+    } finally {
+      activity.spinner = null;
     }
   }
 };
@@ -620,20 +590,17 @@ const printSummary = ({ name, packageManager, mode, port, startedAt }) => {
   if (mode === MODES.none) pending.push(`${packageManager} install`);
   if (mode !== MODES.run) pending.push(devCommand);
 
-  console.log();
-  console.log(`  ${chalk.green('●')} ${chalk.bold(name)} is ready ${muted(`in ${duration}s`)}`);
-  console.log();
+  console.log(BAR);
+  console.log(`${chalk.green('◇')}  ${chalk.bold(name)} is ready ${muted(`in ${duration}s`)}`);
   if (mode === MODES.run) {
-    console.log(`  ${muted('Server')}        ${accent(devUrl)}`);
-    console.log(`  ${muted('Health check')}  ${accent(`${devUrl}/api/health`)}`);
-    console.log(`  ${muted('Press Ctrl+C to stop')}`);
+    console.log(`${BAR}  ${muted('Server')}  ${accent(devUrl)}`);
+    console.log(`${BAR}  ${muted('Health')}  ${accent(`${devUrl}/api/health`)}`);
+    console.log(`${END}  ${muted('Press Ctrl+C to stop')}`);
     console.log();
     return;
   }
-  console.log(`  ${muted('Next steps')}`);
-  pending.forEach((step, index) => console.log(`  ${muted(String(index + 1))}  ${accent(step)}`));
-  console.log();
-  console.log(`  ${muted('Health check')}  ${accent(`${devUrl}/api/health`)}`);
+  pending.forEach((step) => console.log(`${BAR}  ${accent(step)}`));
+  console.log(`${END}  ${muted('Health')}  ${accent(`${devUrl}/api/health`)}`);
   console.log();
 };
 
@@ -656,7 +623,7 @@ async function main() {
   const flagError = validateFlags(cli);
   if (flagError) throw new UsageError(flagError);
 
-  const inspector = ora({ text: 'Inspecting your environment', indent: 2, spinner: 'dots12', color: 'cyan' }).start();
+  const inspector = ora({ text: 'Inspecting your environment', indent: 2, spinner: SPINNER, color: 'magenta' }).start();
   const environment = await detectEnvironment({
     port: cli.values.port === undefined ? DEFAULT_PORT : Number(cli.values.port),
     checkUpdate: !cli.values['no-update-check']
@@ -676,33 +643,30 @@ async function main() {
   }
 
   const interactive = isTTY && !cli.values.yes;
-  if (!interactive) console.log(`  ${muted('Non-interactive mode')}\n`);
+  if (!interactive) console.log(`  ${muted('Non-interactive mode')}`);
 
   const options = interactive ? await askOptions(cli, environment) : await resolveDefaultOptions(cli, environment);
   const originalCwd = process.cwd();
   const { steps, targetDirectory, manager } = buildSteps(options);
   const rollback = createRollback(targetDirectory, originalCwd, !(await fse.pathExists(targetDirectory)));
-  const results = steps.map((step) => ({ label: step.done, state: 'pending', duration: null }));
   const startedAt = performance.now();
 
   const handleInterrupt = async () => {
+    activity.spinner?.stop();
     const removed = await rollback.run();
-    console.log();
-    console.log(`  ${chalk.yellow('!')} Interrupted${removed ? ', partial project removed' : ''}`);
+    console.log(`${chalk.yellow('■')}  Interrupted${removed ? ', partial project removed' : ''}`);
     console.log();
     process.exit(EXIT_INTERRUPTED);
   };
 
-  console.log();
   process.once('SIGINT', handleInterrupt);
 
   try {
-    await runSteps(steps, results);
+    await runSteps(steps);
     rollback.disarm();
   } catch (error) {
     const removed = await rollback.run();
-    printStatusCard(results);
-    if (removed) console.log(`\n  ${muted('Partial project removed')}`);
+    if (removed) console.log(`${BAR}  ${muted('Partial project removed')}`);
     const alreadyExists = /already exists/i.test(error.message);
     printFailure(
       alreadyExists ? 'Directory already exists' : 'Failed to create project',
@@ -713,7 +677,6 @@ async function main() {
     process.removeListener('SIGINT', handleInterrupt);
   }
 
-  printStatusCard(results);
   printSummary({ ...options, startedAt });
 
   if (options.mode === MODES.run) {

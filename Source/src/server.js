@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
@@ -53,7 +54,16 @@ const describeError = (code) => {
 
 const wantsPage = (req) => req.headers.accept?.includes('text/html');
 
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.set('trust proxy', 1);
+app.use(cors({
+  origin: corsOrigins.length > 0 ? corsOrigins : false,
+  credentials: true
+}));
 app.use(authMiddleware);
 app.use(express.static(publicDirectory));
 app.use(apiPrefix, apiRouter);

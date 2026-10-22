@@ -1,7 +1,13 @@
+import { randomBytes, scrypt } from 'node:crypto';
+import { promisify } from 'node:util';
 import express, { Router } from 'express';
 import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import { sessionStore } from './db.js';
+
+const SCRYPT_KEY_LENGTH = 64;
+const SALT_BYTES = 16;
+const scryptAsync = promisify(scrypt);
 
 export const authPrefix = '/auth';
 export const authRouter = Router();
@@ -32,3 +38,24 @@ export const authMiddleware = [
     },
   }),
 ];
+
+export async function hashPassword(password) {
+  const salt = randomBytes(SALT_BYTES).toString('hex');
+  const derivedKey = await scryptAsync(password, salt, SCRYPT_KEY_LENGTH);
+  return `${salt}:${derivedKey.toString('hex')}`;
+}
+
+export function startSession(req, userId) {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((regenerateError) => {
+      if (regenerateError) return reject(regenerateError);
+      req.session.userId = userId;
+      req.session.save((saveError) => (saveError ? reject(saveError) : resolve()));
+    });
+  });
+}
+
+export function requireAuth(req, res, next) {
+  if (req.session?.userId) return next();
+  res.status(401).json({ error: 'Unauthorized' });
+}
